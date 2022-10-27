@@ -1,6 +1,6 @@
 [workspace]
 
 members = [
-  "pictures-manager-core",
-  "pictures-manager-cli"
+  "photos-manager-core",
+  "photos-manager-cli"
 ]

@@ -1,9 +1,9 @@
-# pictures-manager
+# photos-manager
 
 ## Introduction
 
-I have a lot of pictures, many of them are duplicated, many live in the same path and they're a
-complete mess, whenever I open the pictures folder, the explorer takes so much time to index them
+I have a lot of photos, many of them are duplicated, many live in the same path and they're a
+complete mess, whenever I open the photos folder, the explorer takes so much time to index them
 all, which is less than ideal.
 
 My main initial goal on this project is to add some utilities for myself to try to order them in
@@ -24,5 +24,5 @@ be used by the GUI.
 ### Run CLI
 
 ```bash
-cargo run -- --bin=cargo-manager-cli
+cargo run -- --bin=photos-manager-cli
 ```
