@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+  "pictures-manager-core",
+  "pictures-manager-cli"
+]
