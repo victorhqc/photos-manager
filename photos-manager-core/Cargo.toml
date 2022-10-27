@@ -1,5 +1,5 @@
 [package]
-name = "pictures-manager-core"
+name = "photos-manager-core"
 version = "0.1.0"
 edition = "2021"
 
