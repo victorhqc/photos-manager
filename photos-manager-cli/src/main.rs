@@ -8,11 +8,11 @@ fn main() -> Result<()> {
     let args = Arguments::parse();
     println!("{:?}", args);
     match args.cmd {
-        SubCommand::Order { path, output } => {
-            let in_path = Path::new(&path);
-            let out_path = Path::new(&output);
+        SubCommand::Order { source, target } => {
+            let source = Path::new(&source);
+            let target = Path::new(&target);
 
-            order_photos(in_path, out_path).context(OrderIssueSnafu)?;
+            order_photos(source, target).context(OrderIssueSnafu)?;
         }
     }
 
@@ -44,10 +44,10 @@ enum SubCommand {
     Order {
         /// Path to your photos: `C:\path\to\your\photos` or `/path/to/your/photos` depending on your OS
         #[clap(short, long, default_value_t = home_dir().unwrap().into_os_string().into_string().unwrap())]
-        path: String,
+        source: String,
 
         /// Path where you want to place your ordered photos
         #[clap(short, long, default_value_t = home_dir().unwrap().into_os_string().into_string().unwrap())]
-        output: String,
+        target: String,
     },
 }
