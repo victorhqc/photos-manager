@@ -7,7 +7,10 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0.18", features = ["derive"] }
+dirs = "4.0.0"
+photos-manager-core = { path = "../photos-manager-core" }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_derive = "1.0.147"
+snafu = "0.7.3"
 strum = "0.24"
 strum_macros = "0.24"
