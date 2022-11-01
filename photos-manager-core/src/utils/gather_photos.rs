@@ -2,23 +2,22 @@ use crate::photo::Photo;
 use log::{debug, warn};
 use rayon::prelude::*;
 use snafu::prelude::*;
-use std::{fs, io, path::PathBuf};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
+use walkdir::WalkDir;
 
-pub fn gather_photos<'a>(pictures: &mut Vec<Photo>, dir: &PathBuf) -> Result<Vec<Photo>> {
+pub fn gather_photos<'a>(dir: &Path) -> Result<Vec<Photo>> {
     debug!("Gathering photos from: {:?}", dir);
 
-    let entries: Vec<Photo> = fs::read_dir(dir)
-        .context(ReadSourceSnafu)?
+    let entries: Vec<Photo> = WalkDir::new(dir)
         .into_iter()
-//        .into_par_iter()
+        .par_bridge()
         .map(|e| {
             let entry = e.unwrap();
             let path = entry.path();
-
-            if path.is_dir() {
-                let nested: Vec<Photo> = gather_photos(pictures, &path)?;
-                return Ok(Some(nested));
-            }
+            println!("PATH {:?}", path);
 
             let extension = path
                 .extension()
@@ -28,9 +27,7 @@ pub fn gather_photos<'a>(pictures: &mut Vec<Photo>, dir: &PathBuf) -> Result<Vec
                 .to_str()
                 .unwrap();
 
-            let file_type = entry.file_type().context(NoFileTypeSnafu {
-                entry: entry.path(),
-            })?;
+            let file_type = entry.file_type();
 
             if !file_type.is_file() || !is_photo(extension) {
                 return Ok(None);
@@ -42,13 +39,13 @@ pub fn gather_photos<'a>(pictures: &mut Vec<Photo>, dir: &PathBuf) -> Result<Vec
                 entry.file_name()
             );
 
-            Ok(Some(vec![Photo {
-                path: entry.path(),
-                name: entry.file_name(),
-            }]))
+            Ok(Some(Photo {
+                path: PathBuf::from(entry.path()),
+                name: entry.file_name().to_os_string(),
+            }))
         })
         // Ignore errors for now.
-        .filter_map(|p: Result<Option<Vec<Photo>>>| match p {
+        .filter_map(|p: Result<Option<Photo>>| match p {
             Ok(p) => Some(p),
             Err(err) => {
                 warn!("{:?}", err);
@@ -57,8 +54,6 @@ pub fn gather_photos<'a>(pictures: &mut Vec<Photo>, dir: &PathBuf) -> Result<Vec
         })
         // Filter out none values.
         .filter_map(|p| p)
-        // Flatten vectors to handle nested paths.
-        .flatten()
         .collect();
 
     Ok(entries)

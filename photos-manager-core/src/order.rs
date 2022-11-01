@@ -10,7 +10,7 @@ pub fn order_photos(source: &Path, target: &Path) -> Result<()> {
     debug!("Ordering photos from path {:?}", source);
     debug!("Should place result in path {:?}", target);
 
-    let pictures = gather_photos(&mut vec![], &PathBuf::from(source)).context(GatherFailedSnafu)?;
+    let pictures = gather_photos(&PathBuf::from(source)).context(GatherFailedSnafu)?;
 
     info!("Found {} pictures", pictures.len());
     Ok(())

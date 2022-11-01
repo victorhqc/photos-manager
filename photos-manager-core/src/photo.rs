@@ -1,4 +1,4 @@
-use std::{path::PathBuf, ffi::OsString};
+use std::{ffi::OsString, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct Photo {
