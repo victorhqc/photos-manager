@@ -17,7 +17,10 @@ pub fn gather_photos<'a>(dir: &Path) -> Result<Vec<Photo>> {
         .map(|e| {
             let entry = e.unwrap();
             let path = entry.path();
-            println!("PATH {:?}", path);
+
+            if path.is_dir() {
+                return Ok(None);
+            }
 
             let extension = path
                 .extension()
