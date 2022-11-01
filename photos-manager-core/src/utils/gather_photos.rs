@@ -1,22 +1,33 @@
 use crate::photo::Photo;
+use log::{debug, warn};
+use rayon::prelude::*;
 use snafu::prelude::*;
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-};
+use std::{fs, io, path::PathBuf};
 
-pub fn gather_photos<'a>(pictures: Vec<Photo>, dir: &Path) -> Result<Vec<Photo>> {
+pub fn gather_photos<'a>(pictures: &mut Vec<Photo>, dir: &PathBuf) -> Result<Vec<Photo>> {
+    debug!("Gathering photos from: {:?}", dir);
+
     let entries: Vec<Photo> = fs::read_dir(dir)
         .context(ReadSourceSnafu)?
+        .into_iter()
+//        .into_par_iter()
         .map(|e| {
             let entry = e.unwrap();
             let path = entry.path();
 
             if path.is_dir() {
-                return Ok(None);
+                let nested: Vec<Photo> = gather_photos(pictures, &path)?;
+                return Ok(Some(nested));
             }
 
-            let extension = path.extension().context(NoExtensionSnafu { entry: entry.path() })?.to_str().unwrap();
+            let extension = path
+                .extension()
+                .context(NoExtensionSnafu {
+                    entry: entry.path(),
+                })?
+                .to_str()
+                .unwrap();
+
             let file_type = entry.file_type().context(NoFileTypeSnafu {
                 entry: entry.path(),
             })?;
@@ -25,18 +36,29 @@ pub fn gather_photos<'a>(pictures: Vec<Photo>, dir: &Path) -> Result<Vec<Photo>>
                 return Ok(None);
             }
 
-            println!("ENTRY: {:?}", entry.file_name());
-            println!("EXTENSION {:?}", extension);
+            debug!(
+                "Extension: {:?} - Entry: {:?}",
+                extension,
+                entry.file_name()
+            );
 
-            Ok(Some(Photo {
+            Ok(Some(vec![Photo {
                 path: entry.path(),
                 name: entry.file_name(),
-            }))
+            }]))
         })
-        // Ignore errors for now
-        .filter_map(|p: Result<Option<Photo>>| p.ok())
-        // Filter out none values
+        // Ignore errors for now.
+        .filter_map(|p: Result<Option<Vec<Photo>>>| match p {
+            Ok(p) => Some(p),
+            Err(err) => {
+                warn!("{:?}", err);
+                None
+            }
+        })
+        // Filter out none values.
         .filter_map(|p| p)
+        // Flatten vectors to handle nested paths.
+        .flatten()
         .collect();
 
     Ok(entries)
@@ -71,7 +93,7 @@ pub enum GatherPhotosError {
     NoFileType { source: io::Error, entry: PathBuf },
 
     #[snafu(display("Entry has no extension: {}", entry.display()))]
-    NoExtension { entry: PathBuf }
+    NoExtension { entry: PathBuf },
 }
 
 pub type Result<T, E = GatherPhotosError> = std::result::Result<T, E>;

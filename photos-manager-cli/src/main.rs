@@ -1,12 +1,18 @@
 use clap::{Parser, Subcommand};
 use dirs::home_dir;
+use dotenv::dotenv;
+use log::debug;
 use photos_manager_core::order::{order_photos, Error as OrderError};
 use snafu::prelude::*;
 use std::path::Path;
 
 fn main() -> Result<()> {
+    dotenv().ok();
+    pretty_env_logger::init();
+
     let args = Arguments::parse();
-    println!("{:?}", args);
+    debug!("Args: {:?}", args);
+
     match args.cmd {
         SubCommand::Order { source, target } => {
             let source = Path::new(&source);

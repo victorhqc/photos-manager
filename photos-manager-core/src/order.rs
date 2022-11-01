@@ -1,13 +1,18 @@
-use crate::utils::gather_photos;
+use crate::utils::{gather_photos, GatherPhotosError};
+use log::{debug, info};
 use snafu::prelude::*;
-use std::{io, path::Path};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 pub fn order_photos(source: &Path, target: &Path) -> Result<()> {
-    println!("Ordering photos from path {:?}", source);
-    println!("Should place result in path {:?}", target);
+    debug!("Ordering photos from path {:?}", source);
+    debug!("Should place result in path {:?}", target);
 
-    let pictures = gather_photos(vec![], source);
+    let pictures = gather_photos(&mut vec![], &PathBuf::from(source)).context(GatherFailedSnafu)?;
 
+    info!("Found {} pictures", pictures.len());
     Ok(())
 }
 
@@ -15,6 +20,9 @@ pub fn order_photos(source: &Path, target: &Path) -> Result<()> {
 pub enum Error {
     #[snafu(display("Failed to read source: {}", source))]
     ReadSource { source: io::Error },
+
+    #[snafu(display("{:?}", source))]
+    GatherFailed { source: GatherPhotosError },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
