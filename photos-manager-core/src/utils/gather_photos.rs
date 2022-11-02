@@ -8,7 +8,7 @@ use std::{
 };
 use walkdir::WalkDir;
 
-pub fn gather_photos<'a>(dir: &Path) -> Result<Vec<Photo>> {
+pub fn gather_photos(dir: &Path) -> Result<Vec<Photo>> {
     debug!("Gathering photos from: {:?}", dir);
 
     let entries: Vec<Photo> = WalkDir::new(dir)
@@ -63,23 +63,23 @@ pub fn gather_photos<'a>(dir: &Path) -> Result<Vec<Photo>> {
 }
 
 fn is_photo(extension: &str) -> bool {
-    match extension {
-        "rgb" => true,
-        "gif" => true,
-        "pbm" => true,
-        "pgm" => true,
-        "ppm" => true,
-        "tiff" => true,
-        "rast" => true,
-        "xbm" => true,
-        "jpeg" => true,
-        "jpg" => true,
-        "bmp" => true,
-        "png" => true,
-        "webp" => true,
-        "exr" => true,
-        _ => false,
-    }
+    matches!(
+        extension,
+        "rgb"
+            | "gif"
+            | "pbm"
+            | "pgm"
+            | "ppm"
+            | "tiff"
+            | "rast"
+            | "xbm"
+            | "jpeg"
+            | "jpg"
+            | "bmp"
+            | "png"
+            | "webp"
+            | "exr"
+    )
 }
 
 #[derive(Debug, Snafu)]

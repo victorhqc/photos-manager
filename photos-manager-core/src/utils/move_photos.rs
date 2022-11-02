@@ -3,7 +3,10 @@ use crate::photo::Photo;
 use log::debug;
 use rayon::prelude::*;
 use snafu::prelude::*;
-use std::{fs, io, path::{Path, PathBuf}};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 pub fn move_photos(photos: &Vec<Photo>, target: &Path) -> Result<()> {
     fs::create_dir_all(target).context(FailedToCreateTargetSnafu)?;
@@ -17,7 +20,8 @@ pub fn move_photos(photos: &Vec<Photo>, target: &Path) -> Result<()> {
         photo_target.push(&new_folder);
         let targets = vec![photo.path.to_str().unwrap()];
 
-        fs::create_dir_all(&photo_target).context(FailedToCreatePhotoTargetSnafu { path: new_folder })?;
+        fs::create_dir_all(&photo_target)
+            .context(FailedToCreatePhotoTargetSnafu { path: new_folder })?;
 
         let mut options = fs_extra::dir::CopyOptions::new();
         options.skip_exist = true;
