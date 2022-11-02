@@ -11,7 +11,7 @@ use walkdir::WalkDir;
 pub fn gather_photos<F, D>(dir: &Path, gathering_fn: F, gather_done_fn: D) -> Result<Vec<Photo>>
 where
     F: Fn(&Photo) -> () + std::marker::Sync,
-    D: FnOnce(usize) -> ()
+    D: FnOnce(usize) -> (),
 {
     debug!("Gathering photos from: {:?}", dir);
 
@@ -65,7 +65,6 @@ where
         // Filter out none values.
         .filter_map(|p| p)
         .collect();
-
 
     gather_done_fn(entries.len());
     Ok(entries)
