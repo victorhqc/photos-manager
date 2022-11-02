@@ -98,7 +98,11 @@ fn order(source: String, target: String) -> Result<()> {
         }
     }
 
-    println!("      {}Finish ordering photos in {}!", CHECK, HumanDuration(started.elapsed()));
+    println!(
+        "      {}Finish ordering photos in {}!",
+        CHECK,
+        HumanDuration(started.elapsed())
+    );
 
     Ok(())
 }
