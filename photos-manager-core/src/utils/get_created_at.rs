@@ -5,7 +5,7 @@ use log::warn;
 use snafu::prelude::*;
 use std::{fs::File, io, time::UNIX_EPOCH};
 
-pub fn read_photo(photo: &Photo) -> Result<(File, NaiveDateTime)> {
+pub fn get_created_at(photo: &Photo) -> Result<NaiveDateTime> {
     let path = &photo.path;
     let opened_photo = File::open(&photo.path).context(CouldNotOpenPhotoSnafu)?;
 
@@ -41,16 +41,16 @@ pub fn read_photo(photo: &Photo) -> Result<(File, NaiveDateTime)> {
     let created_at = NaiveDateTime::parse_from_str(&created_at, "%Y-%m-%d %H:%M:%S")
         .context(FailedToParseDateSnafu)?;
 
-    Ok((opened_photo, created_at))
+    Ok(created_at)
 }
 
-fn get_created_at_from_metadata(file: File) -> Result<(File, NaiveDateTime)> {
+fn get_created_at_from_metadata(file: File) -> Result<NaiveDateTime> {
     let metadata = file.metadata().context(PhotoHasNoMetadataSnafu)?;
     let created_at = metadata.created().context(NoCreatedAtSnafu)?;
     let created_at_timestamp = created_at.duration_since(UNIX_EPOCH).unwrap().as_secs();
     let created_at = NaiveDateTime::from_timestamp(created_at_timestamp as i64, 0);
 
-    Ok((file, created_at))
+    Ok(created_at)
 }
 
 #[derive(Debug, Snafu)]

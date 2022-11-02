@@ -1,6 +1,6 @@
 mod gather_photos;
-mod read_photo;
+mod get_created_at;
 mod move_photos;
 pub use gather_photos::*;
-pub use read_photo::*;
+pub use get_created_at::*;
 pub use move_photos::*;
