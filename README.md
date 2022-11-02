@@ -16,7 +16,7 @@ be used by the GUI.
 
 ## Usage
 
-### Order photos by date
+### Order photos by month
 
 Order photos from a given folder by year and month. The command works recursively, so every nested
 folder will get accounted for. Every photo will be placed at the root of the target path and
