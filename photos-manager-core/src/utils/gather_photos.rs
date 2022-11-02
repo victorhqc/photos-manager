@@ -64,7 +64,7 @@ pub fn gather_photos(dir: &Path) -> Result<Vec<Photo>> {
 
 fn is_photo(extension: &str) -> bool {
     matches!(
-        extension,
+        extension.to_lowercase().as_str(),
         "rgb"
             | "gif"
             | "pbm"
