@@ -10,8 +10,8 @@ use walkdir::WalkDir;
 
 pub fn gather_photos<F, D>(dir: &Path, gathering_fn: F, gather_done_fn: D) -> Result<Vec<Photo>>
 where
-    F: Fn(&Photo) -> () + std::marker::Sync,
-    D: FnOnce(usize) -> (),
+    F: Fn(&Photo) + std::marker::Sync,
+    D: FnOnce(usize),
 {
     debug!("Gathering photos from: {:?}", dir);
 

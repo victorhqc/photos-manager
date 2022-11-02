@@ -15,10 +15,10 @@ pub fn order_photos<F, G, H, I>(
     moving_done_fn: I,
 ) -> Result<()>
 where
-    F: Fn(&Photo) -> () + std::marker::Sync,
-    G: FnOnce(usize) -> (),
-    H: Fn(u64) -> () + std::marker::Sync,
-    I: FnOnce(usize) -> (),
+    F: Fn(&Photo) + std::marker::Sync,
+    G: FnOnce(usize),
+    H: Fn(u64) + std::marker::Sync,
+    I: FnOnce(usize),
 {
     debug!("Ordering photos from path {:?}", source);
     debug!("Should place result in path {:?}", target);

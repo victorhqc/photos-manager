@@ -43,7 +43,7 @@ fn order(source: String, target: String) -> Result<()> {
     );
 
     let s = ProgressBar::new_spinner();
-    s.set_style(spinner_style.clone());
+    s.set_style(spinner_style);
 
     let (t_tx, t_rx) = channel();
     let (p_tx, p_rx) = sync_channel(1);

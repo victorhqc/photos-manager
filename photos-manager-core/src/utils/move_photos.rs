@@ -15,8 +15,8 @@ pub fn move_photos<F, D>(
     ordering_done_fn: D,
 ) -> Result<()>
 where
-    F: Fn(u64) -> () + std::marker::Sync,
-    D: FnOnce(usize) -> (),
+    F: Fn(u64) + std::marker::Sync,
+    D: FnOnce(usize),
 {
     fs::create_dir_all(target).context(FailedToCreateTargetSnafu)?;
 
