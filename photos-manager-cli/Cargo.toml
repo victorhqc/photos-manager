@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0.18", features = ["derive"] }
+console = "0.15.2"
 dirs = "4.0.0"
 dotenv = "0.15.0"
+indicatif = { version = "0.17.1", features = ["rayon"] }
 log = "0.4.17"
 photos-manager-core = { path = "../photos-manager-core" }
 pretty_env_logger = "0.4.0"
