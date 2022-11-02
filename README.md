@@ -14,6 +14,18 @@ Having a GUI in the future is the main reason to have two packages, the `cli` wh
 will call the `core` package, which will have all the business logic which in a possible future will
 be used by the GUI.
 
+## Usage
+
+### Order photos by date
+
+Order photos from a given folder by year and month. The command works recursively, so every nested
+folder will get accounted for. Every photo will be placed at the root of the target path and
+inside folders like `2020-01`.
+
+```bash
+photos-manager-cli order --source "./home/user/photos"  --target "./home/user/photos"
+```
+
 ## Development
 
 ### Requirements
