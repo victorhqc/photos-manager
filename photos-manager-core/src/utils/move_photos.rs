@@ -1,6 +1,6 @@
 use super::{get_created_at, GetCreatedAtError};
 use crate::photo::Photo;
-use log::debug;
+use log::trace;
 use rayon::prelude::*;
 use snafu::prelude::*;
 use std::{
@@ -8,30 +8,47 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn move_photos(photos: &Vec<Photo>, target: &Path) -> Result<()> {
+pub fn move_photos<F, D>(
+    photos: &Vec<Photo>,
+    target: &Path,
+    ordering_fn: F,
+    ordering_done_fn: D,
+) -> Result<()>
+where
+    F: Fn(u64) + std::marker::Sync,
+    D: FnOnce(usize),
+{
     fs::create_dir_all(target).context(FailedToCreateTargetSnafu)?;
 
-    photos.par_iter().try_for_each(|photo| -> Result<()> {
-        let created_at = get_created_at(photo).context(GetCreatedAtFailedSnafu)?;
-        debug!("{:?}: {}", photo.name, created_at);
+    let total = photos.len();
+    photos
+        .par_iter()
+        .enumerate()
+        .try_for_each(|(index, photo)| -> Result<()> {
+            let created_at = get_created_at(photo).context(GetCreatedAtFailedSnafu)?;
+            trace!("{:?}: {}", photo.name, created_at);
 
-        let new_folder = format!("{}", created_at.format("%Y-%m"));
-        let mut photo_target = PathBuf::from(target);
-        photo_target.push(&new_folder);
-        let targets = vec![photo.path.to_str().unwrap()];
+            let new_folder = format!("{}", created_at.format("%Y-%m"));
+            let mut photo_target = PathBuf::from(target);
+            photo_target.push(&new_folder);
+            let targets = vec![photo.path.to_str().unwrap()];
 
-        fs::create_dir_all(&photo_target)
-            .context(FailedToCreatePhotoTargetSnafu { path: new_folder })?;
+            fs::create_dir_all(&photo_target)
+                .context(FailedToCreatePhotoTargetSnafu { path: new_folder })?;
 
-        let mut options = fs_extra::dir::CopyOptions::new();
-        options.skip_exist = true;
+            let mut options = fs_extra::dir::CopyOptions::new();
+            options.skip_exist = true;
 
-        debug!("Moving {:?} to {:?}", photo.name, photo_target);
-        fs_extra::move_items(&targets, &photo_target, &options).context(CouldNotMovePhotoSnafu)?;
+            trace!("Moving {:?} to {:?}", photo.name, photo_target);
+            fs_extra::move_items(&targets, &photo_target, &options)
+                .context(CouldNotMovePhotoSnafu)?;
 
-        Ok(())
-    })?;
+            ordering_fn(index as u64);
 
+            Ok(())
+        })?;
+
+    ordering_done_fn(total);
     Ok(())
 }
 

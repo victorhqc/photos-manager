@@ -1,5 +1,5 @@
 use crate::photo::Photo;
-use log::{debug, warn};
+use log::{debug, trace, warn};
 use rayon::prelude::*;
 use snafu::prelude::*;
 use std::{
@@ -8,7 +8,11 @@ use std::{
 };
 use walkdir::WalkDir;
 
-pub fn gather_photos(dir: &Path) -> Result<Vec<Photo>> {
+pub fn gather_photos<F, D>(dir: &Path, gathering_fn: F, gather_done_fn: D) -> Result<Vec<Photo>>
+where
+    F: Fn(&Photo) + std::marker::Sync,
+    D: FnOnce(usize),
+{
     debug!("Gathering photos from: {:?}", dir);
 
     let entries: Vec<Photo> = WalkDir::new(dir)
@@ -36,16 +40,19 @@ pub fn gather_photos(dir: &Path) -> Result<Vec<Photo>> {
                 return Ok(None);
             }
 
-            debug!(
+            trace!(
                 "Extension: {:?} - Entry: {:?}",
                 extension,
                 entry.file_name()
             );
 
-            Ok(Some(Photo {
+            let photo = Photo {
                 path: PathBuf::from(entry.path()),
                 name: entry.file_name().to_os_string(),
-            }))
+            };
+
+            gathering_fn(&photo);
+            Ok(Some(photo))
         })
         // Ignore errors for now.
         .filter_map(|p: Result<Option<Photo>>| match p {
@@ -59,6 +66,7 @@ pub fn gather_photos(dir: &Path) -> Result<Vec<Photo>> {
         .filter_map(|p| p)
         .collect();
 
+    gather_done_fn(entries.len());
     Ok(entries)
 }
 

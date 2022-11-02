@@ -1,16 +1,33 @@
-use crate::utils::{gather_photos, move_photos, GatherPhotosError, MovePhotosError};
+use crate::{
+    photo::Photo,
+    utils::{gather_photos, move_photos, GatherPhotosError, MovePhotosError},
+};
 use log::{debug, info};
 use snafu::prelude::*;
 use std::{io, path::Path};
 
-pub fn order_photos(source: &Path, target: &Path) -> Result<()> {
+pub fn order_photos<F, G, H, I>(
+    source: &Path,
+    target: &Path,
+    gathering_fn: F,
+    gathering_done_fn: G,
+    moving_fn: H,
+    moving_done_fn: I,
+) -> Result<()>
+where
+    F: Fn(&Photo) + std::marker::Sync,
+    G: FnOnce(usize),
+    H: Fn(u64) + std::marker::Sync,
+    I: FnOnce(usize),
+{
     debug!("Ordering photos from path {:?}", source);
     debug!("Should place result in path {:?}", target);
 
-    let photos = gather_photos(source).context(GatherFailedSnafu)?;
+    let photos =
+        gather_photos(source, gathering_fn, gathering_done_fn).context(GatherFailedSnafu)?;
     info!("Found {} photos", photos.len());
 
-    move_photos(&photos, target).context(MoveFailedSnafu)?;
+    move_photos(&photos, target, moving_fn, moving_done_fn).context(MoveFailedSnafu)?;
     info!("Completed ordering {} photos!", photos.len());
 
     Ok(())
