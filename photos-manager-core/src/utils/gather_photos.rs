@@ -1,4 +1,4 @@
-use crate::photo::Photo;
+use crate::file::{File, Photo, Video};
 use log::{debug, trace, warn};
 use rayon::prelude::*;
 use snafu::prelude::*;
@@ -8,14 +8,14 @@ use std::{
 };
 use walkdir::WalkDir;
 
-pub fn gather_photos<F, D>(dir: &Path, gathering_fn: F, gather_done_fn: D) -> Result<Vec<Photo>>
+pub fn gather_photos<F, D>(dir: &Path, gathering_fn: F, gather_done_fn: D) -> Result<Vec<File>>
 where
-    F: Fn(&Photo) + std::marker::Sync,
+    F: Fn(&File) + std::marker::Sync,
     D: FnOnce(usize),
 {
     debug!("Gathering photos from: {:?}", dir);
 
-    let entries: Vec<Photo> = WalkDir::new(dir)
+    let entries: Vec<File> = WalkDir::new(dir)
         .into_iter()
         .par_bridge()
         .map(|e| {
@@ -36,7 +36,7 @@ where
 
             let file_type = entry.file_type();
 
-            if !file_type.is_file() || !is_photo(extension) {
+            if !file_type.is_file() || !(is_photo(extension) || is_video(extension)) {
                 return Ok(None);
             }
 
@@ -46,16 +46,23 @@ where
                 entry.file_name()
             );
 
-            let photo = Photo {
-                path: PathBuf::from(entry.path()),
-                name: entry.file_name().to_os_string(),
+            let file = if is_video(extension) {
+                File::Video(Video {
+                    path: PathBuf::from(entry.path()),
+                    name: entry.file_name().to_os_string(),
+                })
+            } else {
+                File::Photo(Photo {
+                    path: PathBuf::from(entry.path()),
+                    name: entry.file_name().to_os_string(),
+                })
             };
 
-            gathering_fn(&photo);
-            Ok(Some(photo))
+            gathering_fn(&file);
+            Ok(Some(file))
         })
         // Ignore errors for now.
-        .filter_map(|p: Result<Option<Photo>>| match p {
+        .filter_map(|p: Result<Option<File>>| match p {
             Ok(p) => Some(p),
             Err(err) => {
                 warn!("{:?}", err);
@@ -87,6 +94,28 @@ fn is_photo(extension: &str) -> bool {
             | "png"
             | "webp"
             | "exr"
+    )
+}
+
+fn is_video(extension: &str) -> bool {
+    matches!(
+        extension.to_lowercase().as_str(),
+        "mp4" //            | "m4p"
+              //            | "webm"
+              //            | "mpg"
+              //            | "mp2"
+              //            | "mpeg"
+              //            | "mpe"
+              //            | "mpv"
+              //            | "ogg"
+              //            | "m4v"
+              //            | "avi"
+              //            | "wmv"
+              //            | "mov"
+              //            | "flv"
+              //            | "swf"
+              //            | "acchd"
+              //            | "qt"
     )
 }
 

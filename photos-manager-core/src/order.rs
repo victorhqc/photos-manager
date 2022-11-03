@@ -1,5 +1,5 @@
 use crate::{
-    photo::Photo,
+    file::File,
     utils::{gather_photos, move_photos, GatherPhotosError, MovePhotosError},
 };
 use log::{debug, info};
@@ -15,7 +15,7 @@ pub fn order_photos<F, G, H, I>(
     moving_done_fn: I,
 ) -> Result<()>
 where
-    F: Fn(&Photo) + std::marker::Sync,
+    F: Fn(&File) + std::marker::Sync,
     G: FnOnce(usize),
     H: Fn(u64) + std::marker::Sync,
     I: FnOnce(usize),

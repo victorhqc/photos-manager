@@ -1,6 +1,6 @@
 use super::{get_created_at, GetCreatedAtError};
-use crate::photo::Photo;
-use log::trace;
+use crate::file::File;
+use log::{trace, warn};
 use rayon::prelude::*;
 use snafu::prelude::*;
 use std::{
@@ -9,7 +9,7 @@ use std::{
 };
 
 pub fn move_photos<F, D>(
-    photos: &Vec<Photo>,
+    photos: &Vec<File>,
     target: &Path,
     ordering_fn: F,
     ordering_done_fn: D,
@@ -25,13 +25,20 @@ where
         .par_iter()
         .enumerate()
         .try_for_each(|(index, photo)| -> Result<()> {
-            let created_at = get_created_at(photo).context(GetCreatedAtFailedSnafu)?;
-            trace!("{:?}: {}", photo.name, created_at);
+            let created_at = match get_created_at(photo) {
+                Ok(c) => c,
+                Err(err) => {
+                    warn!("{}", err);
+
+                    return Err(MovePhotosError::GetCreatedAtFailed { source: err });
+                }
+            };
+            trace!("{:?}: {}", photo.name(), created_at);
 
             let new_folder = format!("{}", created_at.format("%Y-%m"));
             let mut photo_target = PathBuf::from(target);
             photo_target.push(&new_folder);
-            let targets = vec![photo.path.to_str().unwrap()];
+            let targets = vec![photo.path().to_str().unwrap()];
 
             fs::create_dir_all(&photo_target)
                 .context(FailedToCreatePhotoTargetSnafu { path: new_folder })?;
@@ -39,7 +46,7 @@ where
             let mut options = fs_extra::dir::CopyOptions::new();
             options.skip_exist = true;
 
-            trace!("Moving {:?} to {:?}", photo.name, photo_target);
+            trace!("Moving {:?} to {:?}", photo.name(), photo_target);
             fs_extra::move_items(&targets, &photo_target, &options)
                 .context(CouldNotMovePhotoSnafu)?;
 

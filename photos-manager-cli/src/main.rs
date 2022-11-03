@@ -56,7 +56,7 @@ fn order(source: String, target: String) -> Result<()> {
             source,
             target,
             |p| {
-                s.set_message(format!("{:?}", p.name));
+                s.set_message(format!("{:?}", p.name()));
             },
             |total| {
                 s.finish_with_message(format!("   {}Found {} photos!", CAMERA, total));
