@@ -66,10 +66,9 @@ fn get_created_from_video(video: &Video) -> Result<NaiveDateTime> {
 }
 
 fn get_created_at_from_metadata(file: FsFile, filename: &str) -> Result<NaiveDateTime> {
-    match get_created_at_from_name(filename) {
-        Ok(date) => return Ok(date),
-        Err(_) => {}
-    };
+    if let Ok(date) = get_created_at_from_name(filename) {
+        return Ok(date);
+    }
 
     let metadata = file.metadata().context(PhotoHasNoMetadataSnafu)?;
     let created_at = metadata.created().context(NoCreatedAtSnafu)?;
@@ -93,8 +92,7 @@ fn get_created_at_from_name(name: &str) -> Result<NaiveDateTime> {
         .unwrap()
         .get(0)
         .map_or("", |m| m.as_str())
-        .replace("-", "")
-        .replace("_", "");
+        .replace(['-', '_'], "");
     let date = NaiveDate::parse_from_str(&date, "%Y%m%d").context(FailedToParseDateSnafu)?;
     let time = NaiveTime::from_hms(0, 0, 0);
 
