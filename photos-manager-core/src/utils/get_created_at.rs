@@ -88,7 +88,6 @@ fn get_created_at_from_name(name: &str) -> Result<NaiveDateTime> {
     }
 
     if !RE.is_match(name) {
-        println!("nope {}", name);
         return Err(GetCreatedAtError::NameHasNoValidDate);
     }
 
