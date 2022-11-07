@@ -14,6 +14,8 @@ Having a GUI in the future is the main reason to have two packages, the `cli` wh
 will call the `core` package, which will have all the business logic which in a possible future will
 be used by the GUI.
 
+![Ordering Photos by month](./screenshots/photos-manager.png)
+
 ## Usage
 
 ### Order photos by month
