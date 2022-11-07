@@ -7,9 +7,6 @@ use regex::Regex;
 use snafu::prelude::*;
 use std::{fs::File as FsFile, io, time::UNIX_EPOCH};
 
-static WINDOWS_TICK: u64 = 10000000;
-static SEC_TO_UNIX_EPOCH: u64 = 11644473600;
-
 pub fn get_created_at(file: &File) -> Result<NaiveDateTime> {
     match file {
         File::Photo(p) => get_created_from_photo(p),
