@@ -7,6 +7,9 @@ use regex::Regex;
 use snafu::prelude::*;
 use std::{fs::File as FsFile, io, time::UNIX_EPOCH};
 
+static WINDOWS_TICK: u64 = 10000000;
+static SEC_TO_UNIX_EPOCH: u64 = 11644473600;
+
 pub fn get_created_at(file: &File) -> Result<NaiveDateTime> {
     match file {
         File::Photo(p) => get_created_from_photo(p),
@@ -56,27 +59,17 @@ fn get_created_from_photo(photo: &Photo) -> Result<NaiveDateTime> {
 }
 
 fn get_created_from_video(video: &Video) -> Result<NaiveDateTime> {
-    trace!("Getting created at from video: {:?}", video.name);
+    let opened_file = FsFile::open(&video.path).context(CouldNotOpenPhotoSnafu)?;
 
-    //    let path = &video.path;
-    let mut opened_file = FsFile::open(&video.path).context(CouldNotOpenPhotoSnafu)?;
-    let media = mp4parse::read_mp4(&mut opened_file).context(FailedToReadVideoSnafu)?;
-    let metadata = media
-        .userdata
-        .context(VideoHasNoUserdataSnafu {
-            name: String::from(video.name.to_str().unwrap()),
-        })?
-        .context(FailedToReadVideoDataSnafu)?
-        .meta
-        .context(UserdataHasNoMetadataSnafu)?;
+    // Ideally I'm able to use windows properties to get a video's date, but I'm unable to do it so far,
+    // asked a question here:
+    // https://learn.microsoft.com/en-us/answers/questions/1075226/how-to-use-folder-api-with-rust.html
 
-    println!("METADATA {:?}", metadata);
-
-    unimplemented!();
+    return get_created_at_from_metadata(opened_file, video.name.to_str().unwrap());
 }
 
 fn get_created_at_from_metadata(file: FsFile, filename: &str) -> Result<NaiveDateTime> {
-    match get_created_at_from(filename) {
+    match get_created_at_from_name(filename) {
         Ok(date) => return Ok(date),
         Err(_) => {}
     };
@@ -89,17 +82,18 @@ fn get_created_at_from_metadata(file: FsFile, filename: &str) -> Result<NaiveDat
     Ok(created_at)
 }
 
-fn get_created_at_from(name: &str) -> Result<NaiveDateTime> {
+fn get_created_at_from_name(name: &str) -> Result<NaiveDateTime> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\d{4}-\d{2}-\d{2}").unwrap();
+        static ref RE: Regex = Regex::new(r"\d{4}-\d{2}-\d{2}|_\d{8}_|-\d{8}-").unwrap();
     }
 
     if !RE.is_match(name) {
+        println!("nope {}", name);
         return Err(GetCreatedAtError::NameHasNoValidDate);
     }
 
-    let date = RE.captures(name).unwrap().get(0).map_or("", |m| m.as_str());
-    let date = NaiveDate::parse_from_str(date, "%Y-%m-%d").context(FailedToParseDateSnafu)?;
+    let date = RE.captures(name).unwrap().get(0).map_or("", |m| m.as_str()).replace("-", "").replace("_", "");
+    let date = NaiveDate::parse_from_str(&date, "%Y%m%d").context(FailedToParseDateSnafu)?;
     let time = NaiveTime::from_hms(0, 0, 0);
 
     Ok(NaiveDateTime::new(date, time))
@@ -128,17 +122,8 @@ pub enum GetCreatedAtError {
     #[snafu(display("File has no valid date name"))]
     NameHasNoValidDate,
 
-    #[snafu(display("Failed to Read Video {}", source))]
-    FailedToReadVideo { source: mp4parse::Error },
-
-    #[snafu(display("Video {} has no Userdata", name))]
-    VideoHasNoUserdata { name: String },
-
-    #[snafu(display("Userdata has no Metadata"))]
-    UserdataHasNoMetadata,
-
-    #[snafu(display("Failed to Read Video Userdata {}", source))]
-    FailedToReadVideoData { source: mp4parse::Error },
+    #[snafu(display("Failed to access file metadata: {}", source))]
+    CouldNotReadFileMetadata { source: io::Error },
 }
 
 pub type Result<T, E = GetCreatedAtError> = std::result::Result<T, E>;
