@@ -2,7 +2,7 @@ use std::{ffi::OsString, path::PathBuf};
 
 pub enum File {
     Photo(Photo),
-    Video(Video)
+    Video(Video),
 }
 
 impl File {

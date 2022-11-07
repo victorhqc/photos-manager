@@ -88,7 +88,13 @@ fn get_created_at_from_name(name: &str) -> Result<NaiveDateTime> {
         return Err(GetCreatedAtError::NameHasNoValidDate);
     }
 
-    let date = RE.captures(name).unwrap().get(0).map_or("", |m| m.as_str()).replace("-", "").replace("_", "");
+    let date = RE
+        .captures(name)
+        .unwrap()
+        .get(0)
+        .map_or("", |m| m.as_str())
+        .replace("-", "")
+        .replace("_", "");
     let date = NaiveDate::parse_from_str(&date, "%Y%m%d").context(FailedToParseDateSnafu)?;
     let time = NaiveTime::from_hms(0, 0, 0);
 
