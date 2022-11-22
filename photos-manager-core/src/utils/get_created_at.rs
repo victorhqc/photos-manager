@@ -80,19 +80,25 @@ fn get_created_at_from_metadata(file: FsFile, filename: &str) -> Result<NaiveDat
 
 fn get_created_at_from_name(name: &str) -> Result<NaiveDateTime> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"\d{4}-\d{2}-\d{2}|_\d{8}_|-\d{8}-").unwrap();
+        // 1. YYYY-MM-DD
+        // 2. _YYYYMMDD_
+        // 3. -YYYYMMDD_
+        // 4. BURSTYYYMMDD
+        // 5. YYYYMMDD_000
+        static ref RE: Regex = Regex::new(r"\d{4}-\d{2}-\d{2}|_\d{8}_|-\d{8}-|BURST\d{8}|(\d{8})_(\d{3,6})\.").unwrap();
     }
 
     if !RE.is_match(name) {
         return Err(GetCreatedAtError::NameHasNoValidDate);
     }
 
-    let date = RE
-        .captures(name)
-        .unwrap()
-        .get(0)
-        .map_or("", |m| m.as_str())
-        .replace(['-', '_'], "");
+    let captures = RE.captures(name).unwrap();
+    let date_match = match captures.get(1) {
+        Some(dm) => dm.as_str(),
+        None => captures.get(0).map_or("", |m| m.as_str()),
+    };
+
+    let date = date_match.replace(['-', '_', '.'], "").replace("BURST", "");
     let date = NaiveDate::parse_from_str(&date, "%Y%m%d").context(FailedToParseDateSnafu)?;
     let time = NaiveTime::from_hms(0, 0, 0);
 
