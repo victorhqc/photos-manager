@@ -101,7 +101,7 @@ fn get_created_at_from_name(name: &str) -> Result<NaiveDateTime> {
 
     let date = date_match.replace(['-', '_', '.'], "").replace("BURST", "");
     let date = NaiveDate::parse_from_str(&date, "%Y%m%d").context(FailedToParseDateSnafu)?;
-    let time = NaiveTime::from_hms(0, 0, 0);
+    let time = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
 
     Ok(NaiveDateTime::new(date, time))
 }
