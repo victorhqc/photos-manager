@@ -94,6 +94,7 @@ fn is_photo(extension: &str) -> bool {
             | "png"
             | "webp"
             | "exr"
+            | "heif"
     )
 }
 
