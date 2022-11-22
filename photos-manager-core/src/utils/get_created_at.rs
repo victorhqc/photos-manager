@@ -73,7 +73,8 @@ fn get_created_at_from_metadata(file: FsFile, filename: &str) -> Result<NaiveDat
     let metadata = file.metadata().context(PhotoHasNoMetadataSnafu)?;
     let created_at = metadata.created().context(NoCreatedAtSnafu)?;
     let created_at_timestamp = created_at.duration_since(UNIX_EPOCH).unwrap().as_secs();
-    let created_at = NaiveDateTime::from_timestamp(created_at_timestamp as i64, 0);
+    let created_at = NaiveDateTime::from_timestamp_opt(created_at_timestamp as i64, 0)
+        .context(NameHasNoValidDateSnafu)?;
 
     Ok(created_at)
 }
