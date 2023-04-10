@@ -34,9 +34,19 @@ photos-manager-cli order --source "./home/user/photos"  --target "./home/user/ph
 
 - git
 - Rust >= 1.64.0
+- [Image Magick](https://imagemagick.org/script/download.php)
 
 ### Run CLI
 
 ```bash
 cargo run -- --bin=photos-manager-cli
+```
+
+#### Windows
+
+Cargo needs a bit of help to know where the image magick libraries are, after downloading add a
+`.cargo/config.toml` file with the correct path to the libraries
+
+```bash
+cp .cargo/config.toml.example .cargo/config.toml
 ```

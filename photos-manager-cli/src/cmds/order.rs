@@ -55,7 +55,7 @@ pub fn order(source: String, target: String) -> Result<()> {
                 p_tx.send(Progress::Done).unwrap();
             },
         )
-        .context(OrderIssueSnafu)?;
+        .context(OrderSnafu)?;
 
         Ok(())
     });
@@ -99,7 +99,7 @@ enum Progress {
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Ordering Error: {}", source))]
-    OrderIssue { source: OrderError },
+    Order { source: OrderError },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
