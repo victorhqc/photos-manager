@@ -27,7 +27,17 @@ pub fn add_border_to(photo: &Path) -> Result<()> {
     pixel.set_hsl(&WHITE);
 
     wand.read_image(path).context(ReadSnafu)?;
+    let border = get_border_width(&wand)?;
 
+    wand.border_image(&pixel, border, border, operator)
+        .context(BorderSnafu)?;
+
+    wand.write_image(path).context(WriteSnafu)?;
+
+    Ok(())
+}
+
+fn get_border_width(wand: &MagickWand) -> Result<usize> {
     let width = wand.get_image_width();
     let height = wand.get_image_height();
 
@@ -39,7 +49,7 @@ pub fn add_border_to(photo: &Path) -> Result<()> {
         Format::Landscape
     };
 
-    debug!("Image! {:?}", format);
+    debug!("Image format: {:?}", format);
 
     let width = width as f32;
     let height = height as f32;
@@ -53,12 +63,11 @@ pub fn add_border_to(photo: &Path) -> Result<()> {
     let border: i32 = border.round() as i32;
     let border = usize::try_from(border).unwrap();
 
-    wand.border_image(&pixel, border, border, operator)
-        .context(BorderSnafu)?;
+    // Prevent border from being less than 20 pixels
+    let border = if border < 20 { 20 } else { border };
+    debug!("Border width: {:?}", border);
 
-    wand.write_image(path).context(WriteSnafu)?;
-
-    Ok(())
+    Ok(border)
 }
 
 #[derive(Debug)]
