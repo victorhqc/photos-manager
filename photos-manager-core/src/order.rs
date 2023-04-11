@@ -1,6 +1,6 @@
 use crate::{
     file::File,
-    utils::{gather_photos, move_photos, GatherPhotosError, MovePhotosError},
+    utils::{gather_photos, move_photos, MovePhotosError},
 };
 use log::{debug, info};
 use snafu::prelude::*;
@@ -23,8 +23,7 @@ where
     debug!("Ordering photos from path {:?}", source);
     debug!("Should place result in path {:?}", target);
 
-    let photos =
-        gather_photos(source, gathering_fn, gathering_done_fn).context(GatherFailedSnafu)?;
+    let photos = gather_photos(source, gathering_fn, gathering_done_fn);
     info!("Found {} photos", photos.len());
 
     move_photos(&photos, target, moving_fn, moving_done_fn).context(MoveFailedSnafu)?;
@@ -37,9 +36,6 @@ where
 pub enum Error {
     #[snafu(display("Failed to read source: {}", source))]
     ReadSource { source: io::Error },
-
-    #[snafu(display("{:?}", source))]
-    GatherFailed { source: GatherPhotosError },
 
     #[snafu(display("{:?}", source))]
     MoveFailed { source: MovePhotosError },
