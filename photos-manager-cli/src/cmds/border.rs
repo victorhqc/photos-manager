@@ -2,9 +2,10 @@ use photos_manager_core::border::{add_border_to, Error as BorderError};
 use snafu::prelude::*;
 use std::path::Path;
 
-pub fn border(source: String) -> Result<()> {
+pub fn border(source: String, from: Option<String>) -> Result<()> {
     let source = Path::new(&source);
-    add_border_to(source).context(OrderSnafu)
+
+    add_border_to(source, from).context(OrderSnafu)
 }
 
 #[derive(Debug, Snafu)]

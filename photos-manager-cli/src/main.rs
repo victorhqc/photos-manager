@@ -19,7 +19,7 @@ fn main() -> Result<()> {
 
     match args.cmd {
         SubCommand::Order { source, target } => order(source, target).context(OrderSnafu),
-        SubCommand::Border { source } => border(source).context(BorderSnafu),
+        SubCommand::Border { source, from } => border(source, from).context(BorderSnafu),
     }
 }
 
@@ -60,8 +60,12 @@ enum SubCommand {
 
     /// Add a white border to photos
     Border {
-        /// Path to your photos: `C:\path\to\your\photos` or `/path/to/your/photos` depending on your OS
+        /// Path to a photo: `C:\path\to\your\photos\my_pic.jpg`,`/path/to/your/photos/my_pic.jpg` or a directory to be applied to all pictures in it.
         #[clap(short, long, default_value_t = home_dir().unwrap().into_os_string().into_string().unwrap())]
         source: String,
+
+        /// Date, in case of the source being a dir, the borders will be applied to pictures created after the provided date.
+        #[clap(short, long)]
+        from: Option<String>,
     },
 }

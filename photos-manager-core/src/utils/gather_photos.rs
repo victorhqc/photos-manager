@@ -11,6 +11,19 @@ where
 {
     debug!("Gathering photos from: {:?}", dir);
 
+    if dir.is_file() {
+        let file = File::new(&dir.to_path_buf());
+        let entries = match file {
+            Ok(f) => vec![f],
+            Err(err) => {
+                warn!("Failed to add file: {:?}", err);
+                vec![]
+            }
+        };
+
+        return entries;
+    }
+
     let entries: Vec<File> = WalkDir::new(dir)
         .into_iter()
         .par_bridge()
