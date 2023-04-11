@@ -39,7 +39,9 @@ photos-manager-cli order --source "./home/user/photos"  --target "./home/user/ph
 ### Run CLI
 
 ```bash
-cargo run -- --bin=photos-manager-cli
+cargo run -- --help
+cargo run order --help
+cargo run border --help
 ```
 
 #### Windows
