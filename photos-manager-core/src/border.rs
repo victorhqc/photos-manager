@@ -17,7 +17,7 @@ static WHITE: HSL = HSL {
     lightness: 100.0,
 };
 
-pub fn add_border_to(path: &Path, from: Option<String>) -> Result<()> {
+pub fn add_border_to(path: &Path, from: Option<String>, thickness: u8) -> Result<()> {
     debug!("Adding white border to {:?}", path);
 
     let photos = gather_photos(path, |_| {}, |_| {});
@@ -78,7 +78,7 @@ pub fn add_border_to(path: &Path, from: Option<String>) -> Result<()> {
         let path = photo.path().to_str().unwrap();
         wand.read_image(path).context(ReadSnafu)?;
 
-        let border = get_border_width(&wand)?;
+        let border = get_border_width(&wand, thickness)?;
         wand.border_image(&pixel, border, border, operator)
             .context(BorderSnafu)?;
 
@@ -88,9 +88,11 @@ pub fn add_border_to(path: &Path, from: Option<String>) -> Result<()> {
     Ok(())
 }
 
-fn get_border_width(wand: &MagickWand) -> Result<usize> {
+fn get_border_width(wand: &MagickWand, thickness: u8) -> Result<usize> {
     let width = wand.get_image_width();
     let height = wand.get_image_height();
+
+    let thickness: f32 = thickness as f32 / 100.0;
 
     let format: Format = if width == height {
         Format::Square
@@ -106,9 +108,9 @@ fn get_border_width(wand: &MagickWand) -> Result<usize> {
     let height = height as f32;
 
     let border: f32 = match format {
-        Format::Square => width * 0.01,
-        Format::Portrait => width * 0.01,
-        Format::Landscape => height * 0.01,
+        Format::Square => width * thickness,
+        Format::Portrait => width * thickness,
+        Format::Landscape => height * thickness,
     };
 
     let border: i32 = border.round() as i32;

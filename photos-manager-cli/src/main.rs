@@ -2,11 +2,12 @@ use crate::cmds::{
     border::{border, Error as BorderError},
     order::{order, Error as OrderError},
 };
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use dirs::home_dir;
 use dotenv::dotenv;
 use log::debug;
 use snafu::prelude::*;
+use strum_macros::Display;
 
 mod cmds;
 
@@ -19,7 +20,11 @@ fn main() -> Result<()> {
 
     match args.cmd {
         SubCommand::Order { source, target } => order(source, target).context(OrderSnafu),
-        SubCommand::Border { source, from } => border(source, from).context(BorderSnafu),
+        SubCommand::Border {
+            source,
+            from,
+            thickness,
+        } => border(source, from, thickness).context(BorderSnafu),
     }
 }
 
@@ -67,5 +72,19 @@ enum SubCommand {
         /// Date, in case of the source being a dir, the borders will be applied to pictures created after the provided date.
         #[clap(short, long)]
         from: Option<String>,
+
+        /// Thickness of the border.
+        #[clap(short, long, default_value_t = Thickness::Thin)]
+        thickness: Thickness,
     },
+}
+
+#[derive(ValueEnum, Clone, Debug, Display)]
+pub enum Thickness {
+    #[strum(serialize = "thin")]
+    Thin,
+    #[strum(serialize = "medium")]
+    Medium,
+    #[strum(serialize = "thick")]
+    Thick,
 }
