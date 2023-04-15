@@ -40,8 +40,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt update
-          apt install -y imagemagick
+          sudo apt update
+          sudo apt install -y imagemagick
 
       - name: Run Check
         uses: actions-rs/cargo@v1
