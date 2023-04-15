@@ -5,6 +5,7 @@ use crate::{
 use chrono::{Datelike, NaiveDate};
 use log::{debug, warn};
 use magick_rust::{bindings, magick_wand_genesis, MagickError, MagickWand, PixelWand, HSL};
+use rayon::prelude::*;
 use snafu::prelude::*;
 use std::{path::Path, str::FromStr, sync::Once};
 
@@ -31,8 +32,17 @@ where
     debug!("Adding white border to {:?}", path);
 
     let photos = gather_photos(path, |_| {}, photos_ready);
+    let photos: Vec<File> = photos
+        .into_iter()
+        .filter(|photo| match photo {
+            File::Photo(_) => true,
+            File::Video(_) => false,
+        })
+        .collect();
 
-    debug!("Found {} photos", photos.len());
+    let total = photos.len();
+
+    debug!("Found {} photos", total);
 
     let from: Option<NaiveDate> = match from {
         Some(f) => {
@@ -52,57 +62,51 @@ where
 
     let operator = bindings::CompositeOperator_SrcOverCompositeOp;
 
-    let mut total = 0;
-    photos.iter().enumerate().try_for_each(|(index, photo)| {
-        adding_border(index as u64);
+    photos
+        .par_iter()
+        .enumerate()
+        .try_for_each(|(index, photo)| {
+            adding_border(index as u64);
 
-        let pixel = PixelWand::new();
-        pixel.set_hsl(&WHITE);
+            let pixel = PixelWand::new();
+            pixel.set_hsl(&WHITE);
 
-        // Skip Videos
-        match photo {
-            File::Video(_) => {}
-            File::Photo(_) => {}
-        };
+            // Skip photos that are older than the provided date.
+            match from {
+                None => {}
+                Some(f) => {
+                    let created_at = get_created_at(&photo).context(MissingMetadataSnafu)?;
 
-        // Skip photos that are older than the provided date.
-        match from {
-            None => {}
-            Some(f) => {
-                let created_at = get_created_at(&photo).context(MissingMetadataSnafu)?;
+                    let created_at: NaiveDate = NaiveDate::from_ymd_opt(
+                        created_at.year(),
+                        created_at.month(),
+                        created_at.day(),
+                    )
+                    .unwrap();
 
-                let created_at: NaiveDate = NaiveDate::from_ymd_opt(
-                    created_at.year(),
-                    created_at.month(),
-                    created_at.day(),
-                )
-                .unwrap();
+                    let before = created_at < f;
+                    debug!("{:?} < {:?} = {}", created_at, f, before);
 
-                let before = created_at < f;
-                debug!("{:?} < {:?} = {}", created_at, f, before);
-
-                if before {
-                    warn!("Skipping photo: {:?}", photo.name());
-                    return Ok(());
+                    if before {
+                        warn!("Skipping photo: {:?}", photo.name());
+                        return Ok(());
+                    }
                 }
             }
-        }
 
-        let wand = MagickWand::new();
+            let wand = MagickWand::new();
 
-        let path = photo.path().to_str().unwrap();
-        wand.read_image(path).context(ReadSnafu)?;
+            let path = photo.path().to_str().unwrap();
+            wand.read_image(path).context(ReadSnafu)?;
 
-        let border = get_border_width(&wand, thickness)?;
-        wand.border_image(&pixel, border, border, operator)
-            .context(BorderSnafu)?;
+            let border = get_border_width(&wand, thickness)?;
+            wand.border_image(&pixel, border, border, operator)
+                .context(BorderSnafu)?;
 
-        wand.write_image(path).context(WriteSnafu)?;
+            wand.write_image(path).context(WriteSnafu)?;
 
-        total += 1;
-
-        Ok(())
-    })?;
+            Ok(())
+        })?;
 
     debug!("Border iteration completed");
 
