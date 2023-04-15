@@ -38,10 +38,8 @@ jobs:
         run: |
           cp .env.example .env
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick
+      - name: Install imagemagick
+        uses: mfinelli/setup-imagemagick@v2
 
       - name: Run Check
         uses: actions-rs/cargo@v1
