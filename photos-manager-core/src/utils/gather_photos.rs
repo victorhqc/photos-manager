@@ -21,6 +21,7 @@ where
             }
         };
 
+        gather_done_fn(entries.len());
         return entries;
     }
 

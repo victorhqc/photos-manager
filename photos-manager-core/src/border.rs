@@ -6,9 +6,7 @@ use chrono::{Datelike, NaiveDate};
 use log::{debug, warn};
 use magick_rust::{bindings, magick_wand_genesis, MagickError, MagickWand, PixelWand, HSL};
 use snafu::prelude::*;
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::Once;
+use std::{path::Path, str::FromStr, sync::Once};
 
 static START: Once = Once::new();
 static WHITE: HSL = HSL {
@@ -17,10 +15,25 @@ static WHITE: HSL = HSL {
     lightness: 100.0,
 };
 
-pub fn add_border_to(path: &Path, from: Option<String>, thickness: u8) -> Result<()> {
+pub fn add_border<A, B, C>(
+    path: &Path,
+    from: Option<String>,
+    thickness: u8,
+    photos_ready: A,
+    adding_border: B,
+    borders_done: C,
+) -> Result<()>
+where
+    A: FnOnce(usize),
+    B: Fn(u64) + std::marker::Sync,
+    C: FnOnce(usize),
+{
     debug!("Adding white border to {:?}", path);
 
-    let photos = gather_photos(path, |_| {}, |_| {});
+    let photos = gather_photos(path, |_| {}, photos_ready);
+
+    debug!("Found {} photos", photos.len());
+
     let from: Option<NaiveDate> = match from {
         Some(f) => {
             if path.is_dir() {
@@ -38,15 +51,17 @@ pub fn add_border_to(path: &Path, from: Option<String>, thickness: u8) -> Result
     });
 
     let operator = bindings::CompositeOperator_SrcOverCompositeOp;
-    let pixel = PixelWand::new();
-    pixel.set_hsl(&WHITE);
 
-    for photo in photos {
+    let mut total = 0;
+    photos.iter().enumerate().try_for_each(|(index, photo)| {
+        adding_border(index as u64);
+
+        let pixel = PixelWand::new();
+        pixel.set_hsl(&WHITE);
+
         // Skip Videos
         match photo {
-            File::Video(_) => {
-                continue;
-            }
+            File::Video(_) => {}
             File::Photo(_) => {}
         };
 
@@ -68,7 +83,7 @@ pub fn add_border_to(path: &Path, from: Option<String>, thickness: u8) -> Result
 
                 if before {
                     warn!("Skipping photo: {:?}", photo.name());
-                    continue;
+                    return Ok(());
                 }
             }
         }
@@ -83,8 +98,15 @@ pub fn add_border_to(path: &Path, from: Option<String>, thickness: u8) -> Result
             .context(BorderSnafu)?;
 
         wand.write_image(path).context(WriteSnafu)?;
-    }
 
+        total += 1;
+
+        Ok(())
+    })?;
+
+    debug!("Border iteration completed");
+
+    borders_done(total);
     Ok(())
 }
 
