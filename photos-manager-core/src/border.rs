@@ -7,7 +7,7 @@ use log::{debug, warn};
 use magick_rust::{bindings, magick_wand_genesis, MagickError, MagickWand, PixelWand, HSL};
 use rayon::prelude::*;
 use snafu::prelude::*;
-use std::{path::Path, str::FromStr, sync::Once};
+use std::{cmp::Ordering, path::Path, str::FromStr, sync::Once};
 
 static START: Once = Once::new();
 static WHITE: HSL = HSL {
@@ -75,7 +75,7 @@ where
             match from {
                 None => {}
                 Some(f) => {
-                    let created_at = get_created_at(&photo).context(MissingMetadataSnafu)?;
+                    let created_at = get_created_at(photo).context(MissingMetadataSnafu)?;
 
                     let created_at: NaiveDate = NaiveDate::from_ymd_opt(
                         created_at.year(),
@@ -120,12 +120,10 @@ fn get_border_width(wand: &MagickWand, thickness: u8) -> Result<usize> {
 
     let thickness: f32 = thickness as f32 / 100.0;
 
-    let format: Format = if width == height {
-        Format::Square
-    } else if width < height {
-        Format::Portrait
-    } else {
-        Format::Landscape
+    let format: Format = match width.cmp(&height) {
+        Ordering::Equal => Format::Square,
+        Ordering::Less => Format::Portrait,
+        Ordering::Greater => Format::Landscape,
     };
 
     debug!("Image format: {:?}", format);
