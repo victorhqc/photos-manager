@@ -1,22 +1,15 @@
-use clap::{Parser, Subcommand};
-use console::{style, Emoji};
+use crate::cmds::{
+    border::{border, Error as BorderError},
+    order::{order, Error as OrderError},
+};
+use clap::{Parser, Subcommand, ValueEnum};
 use dirs::home_dir;
 use dotenv::dotenv;
-use indicatif::{HumanDuration, ProgressBar, ProgressStyle};
 use log::debug;
-use photos_manager_core::order::{order_photos, Error as OrderError};
 use snafu::prelude::*;
-use std::{
-    path::Path,
-    sync::mpsc::{channel, sync_channel},
-    thread,
-    time::Instant,
-};
+use strum_macros::Display;
 
-static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
-static TRUCK: Emoji<'_, '_> = Emoji("🚚  ", "");
-static CAMERA: Emoji<'_, '_> = Emoji("📷 ", "");
-static CHECK: Emoji<'_, '_> = Emoji("✅ ", "");
+mod cmds;
 
 fn main() -> Result<()> {
     dotenv().ok();
@@ -26,96 +19,22 @@ fn main() -> Result<()> {
     debug!("Args: {:?}", args);
 
     match args.cmd {
-        SubCommand::Order { source, target } => order(source, target),
-    }
-}
-
-fn order(source: String, target: String) -> Result<()> {
-    let started = Instant::now();
-    let spinner_style = ProgressStyle::with_template("{prefix:.bold.dim} {spinner} {wide_msg}")
-        .unwrap()
-        .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ");
-
-    println!(
-        "{} {}Gathering photos...",
-        style("[1/2]").bold().dim(),
-        LOOKING_GLASS
-    );
-
-    let s = ProgressBar::new_spinner();
-    s.set_style(spinner_style);
-
-    let (t_tx, t_rx) = channel();
-    let (p_tx, p_rx) = sync_channel(1);
-
-    thread::spawn(move || -> Result<()> {
-        let source = Path::new(&source);
-        let target = Path::new(&target);
-
-        order_photos(
+        SubCommand::Order { source, target } => order(source, target).context(OrderSnafu),
+        SubCommand::Border {
             source,
-            target,
-            |p| {
-                s.set_message(format!("{:?}", p.name()));
-            },
-            |total| {
-                s.finish_with_message(format!("   {}Found {} photos!", CAMERA, total));
-
-                println!("{} {}Moving photos...", style("[2/2]").bold().dim(), TRUCK);
-                t_tx.send(total).unwrap();
-            },
-            |current| {
-                p_tx.send(Progress::Inc(current)).unwrap();
-            },
-            |_| {
-                p_tx.send(Progress::Done).unwrap();
-            },
-        )
-        .context(OrderIssueSnafu)?;
-
-        Ok(())
-    });
-
-    let total = t_rx.recv().unwrap();
-    let p = ProgressBar::new(total as u64);
-    p.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.green}     [{elapsed_precise}] [{wide_bar:.cyan/blue}]",
-        )
-        .unwrap()
-        .progress_chars("=>-"),
-    );
-
-    for received in p_rx {
-        match received {
-            Progress::Inc(_) => {
-                p.inc(1);
-            }
-            Progress::Done => {
-                p.finish_and_clear();
-                break;
-            }
-        }
+            from,
+            thickness,
+        } => border(source, from, thickness).context(BorderSnafu),
     }
-
-    println!(
-        "      {}Finish ordering photos in {}!",
-        CHECK,
-        HumanDuration(started.elapsed())
-    );
-
-    Ok(())
-}
-
-enum Progress {
-    Inc(u64),
-    Done,
 }
 
 #[derive(Debug, Snafu)]
 enum CLIError {
     #[snafu(display("Ordering Error: {}", source))]
-    OrderIssue { source: OrderError },
+    Order { source: OrderError },
+
+    #[snafu(display("Border Error: {}", source))]
+    Border { source: BorderError },
 }
 
 type Result<T, E = CLIError> = std::result::Result<T, E>;
@@ -143,4 +62,29 @@ enum SubCommand {
         #[clap(short, long, default_value_t = home_dir().unwrap().into_os_string().into_string().unwrap())]
         target: String,
     },
+
+    /// Add a white border to photos
+    Border {
+        /// Path to a photo: `C:\path\to\your\photos\my_pic.jpg`,`/path/to/your/photos/my_pic.jpg` or a directory to be applied to all pictures in it.
+        #[clap(short, long, default_value_t = home_dir().unwrap().into_os_string().into_string().unwrap())]
+        source: String,
+
+        /// Date, in case of the source being a dir, the borders will be applied to pictures created after the provided date.
+        #[clap(short, long)]
+        from: Option<String>,
+
+        /// Thickness of the border.
+        #[clap(short, long, default_value_t = Thickness::Thin)]
+        thickness: Thickness,
+    },
+}
+
+#[derive(ValueEnum, Clone, Debug, Display)]
+pub enum Thickness {
+    #[strum(serialize = "thin")]
+    Thin,
+    #[strum(serialize = "medium")]
+    Medium,
+    #[strum(serialize = "thick")]
+    Thick,
 }

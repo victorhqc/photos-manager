@@ -2,6 +2,9 @@
 name = "photos-manager-cli"
 version = "0.1.0"
 edition = "2021"
+description = "CLI to order photos & videos by creation date or add a white border to photos for a more aesthetic library"
+keywords = ["command-line-interface", "multimedia", "multimedia::images"]
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -28,15 +28,43 @@ inside folders like `2020-01`.
 photos-manager-cli order --source "./home/user/photos"  --target "./home/user/photos"
 ```
 
+### Adds white border
+
+Add a white border to a photo or set of photos and choose from `thin`, `medium` or `thick` border.
+
+```bash
+# A single photo
+photos-manager-cli border --source "./home/user/photos/photo1.jpg"
+
+# Or a set of photos
+photos-manager-cli border --source "./home/user/photos"
+
+# And only to the photos starting from some date onwards.
+# In this case, all photos from jan 1st 2023.
+photos-manager-cli border --source "./home/user/photos" --from "2023-01-01"
+```
+
 ## Development
 
 ### Requirements
 
 - git
 - Rust >= 1.64.0
+- [`Image Magick`](https://imagemagick.org/script/download.php) >= 7
 
 ### Run CLI
 
 ```bash
-cargo run -- --bin=photos-manager-cli
+cargo run -- --help
+cargo run order --help
+cargo run border --help
+```
+
+#### Windows
+
+Cargo needs a bit of help to know where the `image magick` libraries are. After downloading add a
+`.cargo/config.toml` file with the correct path to the libraries
+
+```bash
+cp .cargo/config.toml.example .cargo/config.toml
 ```
