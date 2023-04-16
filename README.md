@@ -50,7 +50,7 @@ photos-manager-cli border --source "./home/user/photos" --from "2023-01-01"
 
 - git
 - Rust >= 1.64.0
-- [`Image Magick`](https://imagemagick.org/script/download.php)
+- [`Image Magick`](https://imagemagick.org/script/download.php) >= 7
 
 ### Run CLI
 

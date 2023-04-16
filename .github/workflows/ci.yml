@@ -39,7 +39,8 @@ jobs:
           cp .env.example .env
 
       - name: Install imagemagick
-        uses: mfinelli/setup-imagemagick@v2
+        run: |
+          scripts/linux/install_imagemagick.sh
 
       - name: Run Check
         uses: actions-rs/cargo@v1
